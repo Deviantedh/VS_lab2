@@ -1,0 +1,31 @@
+----для поднятия докера с бд (для запуска из идеешки):
+
+docker compose up -d postgres
+
+----для запуска докера с бд и проектом без ИДЕЕ!!!:
+
+docker compose up --build
+
+----Для запуска тестов
+
+mvn test
+
+----Для Стопа:
+
+--с удалением контейнера но сохранением бд
+docker compose down
+
+--С приостановкой контейнера
+docker compose stop
+
+----Для запуска фронта:
+
+node frontend/server.js
+
+----Килл фронта:
+
+pkill -f "node frontend/server.js"
+
+----Тест для транзакшона
+
+./mvnw test -Dtest=AttendanceTransactionalTest

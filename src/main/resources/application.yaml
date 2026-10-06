@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: portal-backend
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/portal_db}
+    username: ${DB_USER:portal_user}
+    password: ${DB_PASSWORD:portal_secret}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: false
+    locations: classpath:db/migration
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha

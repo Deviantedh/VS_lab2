@@ -1,177 +1,168 @@
-# REST API Системы управления сотрудниками
+# REST API Системы управления сотрудниками (Микросервисы)
 
-> Корпоративный монолитный бэкенд на **Spring Boot 4.1.1 / Java 21 LTS** для автоматизации кадрового учёта, планирования рабочих смен и фиксации фактической посещаемости в сети филиалов.
+> Распределённый бэкенд на **Spring Boot 4.1.1 / Spring Cloud 2025.1.3 / Java 21 LTS**, реализующий микросервисную архитектуру с Service Discovery, Config Server, API Gateway, реактивным стеком (Reactor + R2DBC / Reactor + JPA) и межсервисным взаимодействием (Feign Client + Circuit Breaker).
 > 
-> **Лабораторная работа №1** по дисциплине «Высокопроизводительные системы».
+> **Лабораторная работа №2** по дисциплине «Высокопроизводительные системы».
 
 ---
 
-##  Содержание
-1. [О проекте и предметной области](#-о-проекте-и-предметной-области)
-2. [Ключевая концепция: План vs Факт](#-ключевая-концепция-план-vs-факт)
-3. [Стек технологий](#-стек-технологий)
-4. [Архитектура и структура кода](#-архитектура-и-структура-кода)
-5. [Модель данных (14 таблиц)](#-модель-данных-14-таблиц)
-6. [Транзакционные сценарии](#-транзакционные-сценарии)
-7. [Быстрый старт и запуск](#-быстрый-старт-и-запуск)
-8. [Интерактивная документация (Swagger UI)](#-интерактивная-документация-swagger-ui)
-9. [Тестирование](#-тестирование)
-10. [Дорожная карта на следующие лабораторные](#-дорожная-карта-на-следующие-лабораторные)
+## 📑 Содержание
+1. [Архитектура системы](#-архитектура-системы)
+2. [Обзор модулей и сервисов](#-обзор-модулей-и-сервисов)
+3. [Реализация требований ТЗ Лабораторной №2](#-реализация-требований-тз-лабораторной-2)
+4. [Интерактивная документация (Swagger UI)](#-интерактивная-документация-swagger-ui)
+5. [Быстрый старт и запуск](#-быстрый-старт-и-запуск)
+6. [Декомпозиция задач и TODO](#-декомпозиция-задач-и-todo)
 
 ---
 
-##  О проекте и предметной области
+## 🏛 Архитектура системы
 
-Система предназначена для распределённых сетей заведений (кафе, кофейни, ритейл, офисы) со сменным графиком работы. 
+```
+                              [ Клиент / Frontend / Swagger UI ]
+                                              │ :8080
+                                              ▼
+                                   ┌──────────────────────┐
+                                   │   Gateway Service    │
+                                   │(Spring Cloud Gateway)│
+                                   └──────────┬───────────┘
+                                              │ (lb:// routes)
+               ┌──────────────────────────────┼──────────────────────────────┐
+               │ :8081                        │ :8082                        │ :8083
+               ▼                              ▼                              ▼
+    ┌──────────────────────┐       ┌──────────────────────┐       ┌──────────────────────┐
+    │   Employee Service   │◄──────┤  Attendance Service  │       │   Schedule Service   │
+    │ (Spring Data JPA)    │ Feign │   (Reactor + R2DBC)  │       │ (Reactor + JPA + CB) │
+    └──────────┬───────────┘  + CB └──────────┬───────────┘       └──────────┬───────────┘
+               │                              │                              │
+               ▼                              ▼                              ▼
+    [ PostgreSQL (JPA) ]           [ PostgreSQL (R2DBC) ]         [ PostgreSQL (JPA) ]
 
-**Основные возможности:**
-* Иерархия организаций: **Компании** $\to$ **Филиалы / Точки сети**.
-* Ведение кадрового реестра: **Сотрудники**, **Справочник должностей**, назначения сотрудника на точку и должность (**Many-to-Many с историей дат**).
-* Управление графиками: планирование расписаний филиалов и рабочих смен с интервалами времени и перерывами.
-* Учёт фактического времени: отметки прихода (`Check-In`) и ухода (`Check-Out`), автоматический подсчёт минут опозданий и переработок.
-* Документооборот: электронная подача и согласование заявок на отпуск, отгулы, справки 2-НДФЛ и медосмотры.
-* Календарь отсутствий и аудит-лог изменений состава смен.
-
----
-
-##  Ключевая концепция: Расписание и График
-
-Вся бизнес-логика построена на строгом разделении:
-1. **Расписание (`Schedule` / `Shifts`):**
-   * Менеджер составляет расписание филиала на месяц и формирует смены (например, 09:00 — 18:00).
-   * На смену назначаются сотрудники с валидацией пересечений и отпусков.
-2. **График (`Attendance`):**
-   * В день смены сотрудник делает `Check-In` при выходе на работу и `Check-Out` при уходе.
-   * Система сравнивает плановое время с фактическим и автоматически рассчитывает `lateMinutes` (опоздание) и `overtimeMinutes` (переработку).
-
----
-
-##  Стек технологий
-
-* **Язык разработки:** Java 21 LTS
-* **Фреймворк:** Spring Boot 4.1.1
-* **Сборка проекта:** Apache Maven 3.9 (включён Maven Wrapper `./mvnw`)
-* **База данных:** PostgreSQL 16 (в Docker)
-* **Миграции БД:** Flyway
-* **Документация API:** OpenAPI 3 / Swagger UI (`springdoc-openapi`)
-* **Тестирование:** JUnit 5 (Jupiter), Mockito, Testcontainers (PostgreSQL)
-* **Контейнеризация:** Docker (мультистейдж сборка, запуск от непривилегированного пользователя `appuser`), Docker Compose
-
----
-
-##  Архитектура и структура кода
-
-Код строго структурирован по слоям (**Package-by-layer**):
-
-```text
-src/main/java/portal/
-├── config/                  # Конфигурации бинов (OpenApi Swagger, Jackson JavaTimeModule)
-├── controller/              # REST-контроллеры (10 штук, валидация DTO, правильные HTTP-коды)
-│   ├── AbsenceController.java       # Календарь отсутствий
-│   ├── AttendanceController.java    # Явки (Infinite Scroll / Slice)
-│   ├── BranchController.java        # Филиалы
-│   ├── CompanyController.java       # Компании
-│   ├── EmployeeController.java      # Персонал и назначения
-│   ├── PositionController.java      # Справочник должностей
-│   ├── RequestController.java       # Заявки сотрудников
-│   ├── ScheduleController.java      # Расписания
-│   ├── ShiftController.java         # Смены (X-Total-Count в хедере)
-│   └── UserController.java          # Пользователи и роли
-├── service/                 # Бизнес-логика и транзакции (@Transactional)
-│   ├── ShiftService.java            # Транзакционный сценарий №1
-│   ├── RequestService.java          # Транзакционный сценарий №2
-│   └── ...                          # Сервисы для всех сущностей
-├── repository/              # Spring Data JPA интерфейсы с кастомными JPQL-запросами
-├── entity/                  # JPA-сущности (13 моделей + 6 перечислений EnumType.STRING)
-├── dto/                     # Request и Response DTO с валидацией (jakarta.validation)
-└── exception/               # GlobalExceptionHandler, бизнес-исключения, структурированный ErrorResponse
+               ▲                              ▲                              ▲
+               └──────────────────────────────┼──────────────────────────────┘
+                                              │
+                      ┌───────────────────────┴───────────────────────┐
+                      │                                               │
+             ┌─────────────────┐                             ┌─────────────────┐
+             │Discovery Service│                             │ Config Service  │
+             │ (Eureka Server) │                             │ (Config Server) │
+             │      :8761      │                             │      :8888      │
+             └─────────────────┘                             └─────────────────┘
 ```
 
 ---
 
-##  Модель данных (14 таблиц)
+## 📦 Обзор модулей и сервисов
 
-Структура базы данных автоматически разворачивается миграцией Flyway (`V1__init_schema.sql`):
-
-1. **`roles`** — справочник системных ролей (`0: ADMIN`, `1: HR`, `2: MANAGER`, `3: EMPLOYEE`).
-2. **`users`** — аккаунты пользователей с привязкой к сотруднику (`employee_id`) и роли.
-3. **`companies`** — организации и сети заведений.
-4. **`branches`** — филиалы и точки сети (связь `Many-to-One` к `Company`).
-5. **`positions`** — должности сотрудников.
-6. **`employees`** — личные карточки сотрудников (`name`, `phone`, `status`).
-7. **`employee_assignments`** — назначение сотрудника на филиал и должность (**Many-to-Many с доп. полями** `started_at`, `ended_at`, `is_primary`).
-8. **`schedules`** — расписания филиала на календарный период.
-9. **`shifts`** — плановые смены внутри расписания (`date`, `time_from`, `time_to`, `break_minutes`).
-10. **`shift_employees`** — связка смен и сотрудников (**чистая Many-to-Many**).
-11. **`shift_employee_logs`** — аудит-лог изменений состава смен (`ASSIGNED` / `REMOVED`).
-12. **`attendance_records`** — отметки явок и фактически отработанного времени (План + Факт).
-13. **`requests`** — электронные заявки сотрудников (`VACATION`, `DAY_OFF`, `CERTIFICATE`, `MEDICAL_EXAM`).
-14. **`employee_absences`** — календарь зафиксированных отсутствий (отпуска, больничные).
+| Модуль | Порт | Стек / Технологии | Назначение |
+| :--- | :---: | :--- | :--- |
+| **`common-dto`** | — | Jackson, Jakarta Validation, Swagger Annotations | Общая библиотека моделей, Request/Response DTO, Enums (`RoleCode`, `EmployeeStatus`, `RequestType` и т.д.) и пагинации `SliceResponse`. |
+| **`discovery-service`** | `8761` | Netflix Eureka Server, Spring Boot Actuator | Service Discovery: единый реестр адресов и инстансов микросервисов. |
+| **`config-service`** | `8888` | Spring Cloud Config Server, Native Profile | Централизованное хранилище конфигурационных файлов (`config-repo/`) для всех сервисов. |
+| **`gateway-service`** | `8080` | Spring Cloud Gateway (MVC), Springdoc OpenAPI | Единая точка входа в систему, маршрутизация запросов к микросервисам по Eureka-именам (`lb://`), проброс CORS и агрегация Swagger UI. |
+| **`employee-service`** | `8081` | Spring Web, Spring Data JPA, PostgreSQL, Flyway | Управление персоналом: компании, филиалы сети, справочник должностей, сотрудники, назначения и учетные записи пользователей. |
+| **`attendance-service`** | `8082` | **Spring WebFlux, Reactor, Spring Data R2DBC, PostgreSQL R2DBC** | Учет фактического рабочего времени: фиксация прихода (`Check-In`) и ухода (`Check-Out`), бесконечная реактивная лента посещений (`Mono`/`Flux`). |
+| **`schedule-service`** | `8083` | **Spring WebFlux, Reactor, Spring Data JPA, OpenFeign, Resilience4j** | Управление расписаниями и сменами: реактивные мосты для тяжелых JPA-запросов (`Schedulers.boundedElastic()`), вызовы `employee-service` через Feign Client с Circuit Breaker и fallback-заглушкой. |
 
 ---
 
-##  Транзакционные сценарии
+## 🎯 Реализация требований ТЗ Лабораторной №2
 
-В соответствии с требованиями ТЗ реализованы и протестированы сложные сценарии с гарантией ACID:
-
-### 1. Назначение сотрудника на смену (`ShiftService.assignEmployee`)
-* **Что делает:** Назначает сотрудника на плановую смену филиала.
-* **Бизнес-проверки в рамках одной транзакции:**
-  1. Проверка, не уволен ли сотрудник (`EmployeeStatus != DISMISSED`).
-  2. Проверка отсутствий: не находится ли сотрудник в отпуске/на больничном в эту дату (`EmployeeAbsence`).
-  3. Проверка накладок: нет ли у сотрудника пересекающихся по времени смен в этой или других точках сети.
-  4. Атомарное добавление сотрудника в смену и запись в аудит-лог `shift_employee_logs`.
-
-### 2. Согласование заявки на отпуск (`RequestService.processRequest`)
-* **Что делает:** Обработка заявки HR-ом или менеджером со статусом `APPROVED`.
-* **Атомарные действия в рамках одной транзакции:**
-  1. Перевод статуса заявки в `APPROVED` и фиксация согласующего лица.
-  2. Автоматическое создание записи в календаре отсутствий (`employee_absences`) на указанный диапазон дат.
-  3. Автоматический поиск всех смен сотрудника, попадающих на даты отпуска, снятие его с этих смен и фиксация удаления в аудит-логе.
+1. **Регистрация в Eureka:**
+   - Все микросервисы (`employee-service`, `attendance-service`, `schedule-service`, `gateway-service`, `config-service`) подключают `spring-cloud-starter-netflix-eureka-client` и регистрируются в `discovery-service` (`:8761`).
+2. **Конфигурация через Config Server:**
+   - Настроен `config-service` (`:8888`), читающий конфигурации из каталога [`config-repo`](file:///Users/devianted/Desktop/Учёба/Впст/lab2/config-repo). Все сервисы подключают `spring-cloud-starter-config`.
+3. **Единая точка входа через Spring Gateway:**
+   - Сервис `gateway-service` слушает порт `8080` и маршрутизирует:
+     - `/api/companies/**`, `/api/branches/**`, `/api/positions/**`, `/api/employees/**`, `/api/users/**` $\to$ `lb://employee-service`
+     - `/api/attendance/**` $\to$ `lb://attendance-service`
+     - `/api/schedules/**`, `/api/shifts/**`, `/api/absences/**`, `/api/requests/**` $\to$ `lb://schedule-service`
+4. **Межсервисное взаимодействие (Feign Client):**
+   - В `schedule-service` реализован [`EmployeeClient`](file:///Users/devianted/Desktop/Учёба/Впст/lab2/schedule-service/src/main/java/portal/schedule/client/EmployeeClient.java) с аннотацией `@FeignClient(name = "employee-service")` для проверки данных сотрудника при планировании смен.
+5. **Отказоустойчивость (Circuit Breaker):**
+   - Интегрирован `Resilience4j` с fallback-классом [`EmployeeClientFallback`](file:///Users/devianted/Desktop/Учёба/Впст/lab2/schedule-service/src/main/java/portal/schedule/client/EmployeeClientFallback.java). При недоступности сервиса сотрудников запрос не блокирует поток и возвращает резервный ответ.
+6. **Микросервис на Reactor + R2DBC:**
+   - Реализован [`attendance-service`](file:///Users/devianted/Desktop/Учёба/Впст/lab2/attendance-service) с реактивным неблокирующим драйвером PostgreSQL (`r2dbc-postgresql`), реактивными репозиториями `R2dbcRepository` и контроллерами на `Mono`/`Flux`.
+7. **Микросервис на Reactor + Spring Data JPA/JDBC:**
+   - Реализован [`schedule-service`](file:///Users/devianted/Desktop/Учёба/Впст/lab2/schedule-service) с реактивным сервисом [`ReactiveScheduleBridgeService`](file:///Users/devianted/Desktop/Учёба/Впст/lab2/schedule-service/src/main/java/portal/schedule/service/ReactiveScheduleBridgeService.java), где синхронные операции JPA изолированы в специальном пуле потоков:
+     ```java
+     Mono.fromCallable(() -> shiftRepository.findById(id))
+         .subscribeOn(Schedulers.boundedElastic());
+     ```
 
 ---
 
-## Быстрый старт и запуск
+## 📖 Интерактивная документация (Swagger UI)
 
-### 1. Поднятие базы данных (для запуска приложения из IntelliJ IDEA)
+Благодаря агрегации в Gateway, вся документация API доступна в одном окне:
+* **Единый Swagger UI:** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+* В верхнем правом выпадающем списке доступно переключение между спецификациями:
+  * **Employee Service** (`/v3/api-docs/employee-service`)
+  * **Attendance Service (R2DBC)** (`/v3/api-docs/attendance-service`)
+  * **Schedule Service (WebFlux + JPA)** (`/v3/api-docs/schedule-service`)
+
+---
+
+## 🚀 Быстрый старт и запуск
+
+### Вариант 1: Сборка и локальная компиляция
 ```bash
-docker compose up -d postgres
+# Собрать все модули проекта
+./mvnw clean compile
 ```
-После этого запустите класс `portal.Lab1Application` в IntelliJ IDEA (или выполните `./mvnw spring-boot:run`).
 
-### 2. Запуск всего стека в Docker (БД + Бэкенд без IDE)
+### Вариант 2: Запуск всей системы в Docker Compose
 ```bash
 docker compose up --build
 ```
-Бэкенд REST API будет доступен на `http://localhost:8080`.
-
-### 3. Остановка Docker-контейнеров
-* **С удалением контейнеров, но сохранением данных БД:**
-  ```bash
-  docker compose down
-  ```
-* **С временной приостановкой контейнеров:**
-  ```bash
-  docker compose stop
-  ```
+*Поднимутся:* PostgreSQL, Eureka Server (`:8761`), Config Server (`:8888`), Gateway (`:8080`) и 3 бизнес-сервиса (`:8081`, `:8082`, `:8083`).
 
 ---
 
-## Интерактивная документация (Swagger UI)
+## 📋 Декомпозиция задач и TODO
 
-После запуска приложения перейдите в браузере:  
-**[http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)**
+Система подготовлена для командной работы и разделена по зонам ответственности:
 
-* 10 REST-контроллеров сгруппированы по тематическим разделам.
-* Схемы запросов содержат корректные типы дат (`YYYY-MM-DD`, `HH:mm:ss`, ISO-8601) и числовые примеры.
-* Поддерживается интерактивное тестирование (**Try it out**).
+###  Сделано (Архитектура и сервисы):
+- [x] Декомпозиция монолита на модули Maven multi-module.
+- [x] Выделение общего модуля контрактов `common-dto`.
+- [x] Реализация Service Discovery (`discovery-service` на Netflix Eureka).
+- [x] Реализация Centralized Configuration (`config-service` + `config-repo`).
+- [x] Настройка API Gateway (`gateway-service`) с CORS и роутингом `lb://`.
+- [x] Выделение сервиса `employee-service` (Spring Data JPA + Flyway).
+- [x] Реализация сервиса `attendance-service` на **Reactor + R2DBC**.
+- [x] Реализация сервиса `schedule-service` на **Reactor + JPA + Feign Client + Circuit Breaker**.
+- [x] Агрегация Swagger UI на Gateway по всем микросервисам.
+- [x] Мультистейдж `Dockerfile` и оркестрация в `compose.yaml`.
 
 ---
 
-## Тестирование
+### ⏳ TODO для Участника 2 (Тестирование и мокирование):
+- [ ] **Тесты для `common-dto`:**
+  - [ ] Сериализация / десериализация DTO через Jackson (проверка кастомных дат и Enums).
+- [ ] **Тесты для `employee-service`:**
+  - [ ] Модульные тесты сервисов (`EmployeeServiceTest`, `BranchServiceTest`).
+  - [ ] Интеграционные тесты с Testcontainers PostgreSQL (`@SpringBootTest`).
+- [ ] **Тесты для реактивного `attendance-service`:**
+  - [ ] Тестирование реактивных потоков `Mono`/`Flux` с использованием `StepVerifier`.
+  - [ ] Интеграционные тесты реактивного репозитория R2DBC.
+- [ ] **Тесты для `schedule-service`:**
+  - [ ] Тестирование `ReactiveScheduleBridgeService` с моками `EmployeeClient`.
+  - [ ] Тестирование сценариев Circuit Breaker: имитация падения `employee-service` и проверка срабатывания `EmployeeClientFallback`.
+  - [ ] Тестирование транзакционных операций создания и отклонения отпусков/смен.
 
-Запуск полного набора модульных и интеграционных тестов:
-```bash
-./mvnw test
-```
-*(Все 106 тестов проходят со статусом BUILD SUCCESS, интеграционные тесты используют Testcontainers с PostgreSQL).*
+---
+
+### ⏳ TODO для Участницы 3 (Интеграция, QA и сдача):
+- [ ] **Сквозное ручное/E2E тестирование через Gateway:**
+  - [ ] Проверка создания сотрудника через `:8080/api/employees`.
+  - [ ] Назначение созданного сотрудника на смену через `:8080/api/shifts`.
+  - [ ] Проверка отметки явки сотрудника через реактивный `:8080/api/attendance/check-in`.
+- [ ] **Проверка отказоустойчивости на живом стенде:**
+  - [ ] Остановить контейнер `employee-service` (`docker stop portal-employee-service`).
+  - [ ] Выполнить запрос в `schedule-service` и убедиться, что Circuit Breaker корректно отдает fallback-ответ без зависания шлюза.
+- [ ] **Синхронизация фронтенда:**
+  - [ ] Убедиться, что фронтенд из папки [`frontend/`](file:///Users/devianted/Desktop/Учёба/Впст/lab2/frontend) шлет запросы на порт Gateway (`:8080`) и корректно отображает списки и отметки.
+- [ ] **Подготовка отчета к лабораторной работе:**
+  - [ ] Описать диаграмму декомпозиции сервисов.
+  - [ ] Приложить скриншоты панели Eureka, единого Swagger UI и логов Circuit Breaker.

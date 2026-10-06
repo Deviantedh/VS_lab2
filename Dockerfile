@@ -1,21 +1,25 @@
-# 1. сборка
+ARG MODULE=gateway-service
 
+# 1. Сборка
 FROM eclipse-temurin:21-jdk-alpine AS builder
 
 WORKDIR /build
 
-# Копируем конфигурацию сборщика и зависимости для кеширования слоев
 COPY pom.xml mvnw ./
 COPY .mvn .mvn
+COPY common-dto common-dto
+COPY discovery-service discovery-service
+COPY config-service config-service
+COPY gateway-service gateway-service
+COPY employee-service employee-service
+COPY attendance-service attendance-service
+COPY schedule-service schedule-service
 
+ARG MODULE
 RUN chmod +x ./mvnw
+RUN ./mvnw clean package -pl ${MODULE} -am -DskipTests
 
-COPY src ./src
-RUN --mount=type=cache,target=/root/.m2 ./mvnw clean package -DskipTests
-
-
-# 2. запуск
-
+# 2. Запуск
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
@@ -23,7 +27,8 @@ WORKDIR /app
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
 
-COPY --from=builder /build/target/*.jar app.jar
+ARG MODULE
+COPY --from=builder /build/${MODULE}/target/*.jar app.jar
 
 EXPOSE 8080
 

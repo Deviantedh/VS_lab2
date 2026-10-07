@@ -137,19 +137,19 @@ docker compose up --build
 
 ---
 
-###  TODO для Лёши (Тестирование):
-- [ ] **Тесты для `common-dto`:**
-  - [ ] Сериализация / десериализация DTO через Jackson (проверка кастомных дат и Enums).
-- [ ] **Тесты для `employee-service`:**
-  - [ ] Модульные тесты сервисов (`EmployeeServiceTest`, `BranchServiceTest`).
-  - [ ] Интеграционные тесты с Testcontainers PostgreSQL (`@SpringBootTest`).
-- [ ] **Тесты для реактивного `attendance-service`:**
-  - [ ] Тестирование реактивных потоков `Mono`/`Flux` с использованием `StepVerifier`.
-  - [ ] Интеграционные тесты реактивного репозитория R2DBC.
-- [ ] **Тесты для `schedule-service`:**
-  - [ ] Тестирование `ReactiveScheduleBridgeService` с моками `EmployeeClient`.
-  - [ ] Тестирование сценариев Circuit Breaker: имитация падения `employee-service` и проверка срабатывания `EmployeeClientFallback`.
-  - [ ] Тестирование транзакционных операций создания и отклонения отпусков/смен.
+### 📋 TODO для Лёши (Тестирование):
+- [x] **Тесты для `common-dto`:**
+  - [x] Сериализация / десериализация DTO через Jackson (проверка кастомных дат и Enums).
+- [x] **Тесты для `employee-service`:**
+  - [x] Модульные тесты сервисов (`EmployeeServiceTest`, `BranchServiceTest`).
+  - [x] Интеграционные тесты с Testcontainers PostgreSQL (`@SpringBootTest`).
+- [x] **Тесты для реактивного `attendance-service`:**
+  - [x] Тестирование реактивных потоков `Mono`/`Flux` с использованием `StepVerifier`.
+  - [x] Интеграционные тесты реактивного репозитория R2DBC.
+- [x] **Тесты для `schedule-service`:**
+  - [x] Тестирование `ReactiveScheduleBridgeService` с моками `EmployeeClient`.
+  - [x] Тестирование сценариев Circuit Breaker: имитация падения `employee-service` и проверка срабатывания `EmployeeClientFallback`.
+  - [x] Тестирование транзакционных операций создания и отклонения отпусков/смен.
 
 ---
 

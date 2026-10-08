@@ -21,6 +21,7 @@ import java.util.List;
 public class ReactiveScheduleBridgeService {
 
     private final ShiftRepository shiftRepository;
+    private final ShiftService shiftService;
     private final EmployeeClient employeeClient;
 
     // Реактивная обертка вокруг JPA через Schedulers.boundedElastic()
@@ -47,17 +48,16 @@ public class ReactiveScheduleBridgeService {
 
     public Mono<ShiftDto.Response> assignEmployeeToShiftReactive(Long shiftId, Long employeeId) {
         return Mono.fromCallable(() -> {
-            // 1. Межсервисный вызов через Feign Client с Circuit Breaker
+            // 1. Межсервисный вызов через Feign Client с Circuit Breaker:
+            // проверяем, что сотрудник существует и доступен в employee-service
             var employee = employeeClient.getEmployeeById(employeeId);
             if (employee == null) {
                 throw new ResourceNotFoundException("Сотрудник с ID " + employeeId + " не найден");
             }
 
-            // 2. Блокирующий JPA запрос
-            Shift shift = shiftRepository.findById(shiftId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Смена с ID " + shiftId + " не найдена"));
-
-            return toDto(shift);
+            // 2. Блокирующий JPA-сценарий в транзакции: назначение со всеми
+            // проверками (отпуска, пересечения смен) и записью в аудит-лог
+            return shiftService.assignEmployee(shiftId, employeeId, null);
         }).subscribeOn(Schedulers.boundedElastic());
     }
 

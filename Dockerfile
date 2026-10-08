@@ -24,6 +24,9 @@ FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
+# Конфигурации для Config Server (native profile читает file:./config-repo)
+COPY config-repo /app/config-repo
+
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
 

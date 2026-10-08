@@ -23,7 +23,9 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.autoconfigure.exclude=org.springframework.boot.r2dbc.autoconfigure.R2dbcAutoConfiguration,org.springframework.boot.r2dbc.autoconfigure.R2dbcRepositoriesAutoConfiguration,org.springframework.boot.r2dbc.autoconfigure.R2dbcTransactionManagerAutoConfiguration"
+})
 @ActiveProfiles("test")
 @Transactional
 class EmployeeServiceSpringBootTest {

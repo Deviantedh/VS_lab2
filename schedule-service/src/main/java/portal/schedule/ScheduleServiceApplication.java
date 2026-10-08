@@ -5,9 +5,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
 @EntityScan({"portal.schedule", "portal.entity"})
+@EnableJpaRepositories(basePackages = "portal.schedule.repository")
 @EnableDiscoveryClient
 @EnableFeignClients
 public class ScheduleServiceApplication {

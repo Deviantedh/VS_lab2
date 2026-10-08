@@ -6,9 +6,17 @@ docker compose up -d postgres
 
 docker compose up --build
 
-----Для запуска тестов
+----Для запуска тестов во всех модулях:
 
-mvn test
+./mvnw test
+
+----Для запуска тестов со сбором покрытия (JaCoCo) и открытием отчета в браузере:
+
+./run-tests-with-coverage.sh
+
+----Для быстрого открытия уже сформированного отчета покрытия:
+
+./run-tests-with-coverage.sh --open
 
 ----Для Стопа:
 

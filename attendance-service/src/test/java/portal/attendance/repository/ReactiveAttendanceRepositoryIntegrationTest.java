@@ -3,6 +3,7 @@ package portal.attendance.repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
@@ -16,14 +17,21 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import portal.attendance.entity.ReactiveAttendanceRecord;
 import reactor.test.StepVerifier;
 
+import java.io.File;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@DisabledIf("isDockerNotAvailable")
 @Testcontainers(disabledWithoutDocker = true)
 class ReactiveAttendanceRepositoryIntegrationTest {
+
+    static boolean isDockerNotAvailable() {
+        return !new File(System.getProperty("user.home") + "/.docker/run/docker.sock").exists()
+                && !new File("/var/run/docker.sock").exists();
+    }
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")

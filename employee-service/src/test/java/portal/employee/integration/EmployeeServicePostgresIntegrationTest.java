@@ -2,6 +2,7 @@ package portal.employee.integration;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -14,14 +15,21 @@ import portal.dto.EmployeeDto;
 import portal.dto.EmployeeStatus;
 import portal.employee.service.EmployeeService;
 
+import java.io.File;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@DisabledIf("isDockerNotAvailable")
 @Testcontainers(disabledWithoutDocker = true)
 class EmployeeServicePostgresIntegrationTest {
+
+    static boolean isDockerNotAvailable() {
+        return !new File(System.getProperty("user.home") + "/.docker/run/docker.sock").exists()
+                && !new File("/var/run/docker.sock").exists();
+    }
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")

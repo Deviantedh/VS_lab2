@@ -1,8 +1,12 @@
 spring:
   application:
     name: attendance-service-test
+  main:
+    banner-mode: "off"
   cloud:
     config:
+      enabled: false
+    discovery:
       enabled: false
 
 eureka:

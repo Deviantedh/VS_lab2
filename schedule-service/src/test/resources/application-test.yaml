@@ -1,8 +1,12 @@
 spring:
   application:
     name: schedule-service-test
+  main:
+    banner-mode: "off"
   cloud:
     config:
+      enabled: false
+    discovery:
       enabled: false
     openfeign:
       circuitbreaker:

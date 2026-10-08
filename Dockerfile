@@ -17,7 +17,8 @@ COPY schedule-service schedule-service
 
 ARG MODULE
 RUN chmod +x ./mvnw
-RUN ./mvnw clean package -pl ${MODULE} -am -DskipTests
+RUN --mount=type=cache,target=/root/.m2 \
+    ./mvnw clean package -pl ${MODULE} -am -DskipTests
 
 # 2. Запуск
 FROM eclipse-temurin:21-jre-alpine

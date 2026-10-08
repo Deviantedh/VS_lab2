@@ -20,7 +20,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import portal.dto.ShiftDto;
 import portal.dto.ShiftEmployeeLogDto;
+import portal.schedule.service.ReactiveScheduleBridgeService;
 import portal.schedule.service.ShiftService;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -32,6 +34,7 @@ import java.util.List;
 public class ShiftController {
 
     private final ShiftService shiftService;
+    private final ReactiveScheduleBridgeService bridgeService;
 
     /**
      * ТРЕБОВАНИЕ ТЗ:
@@ -131,5 +134,19 @@ public class ShiftController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         shiftService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Реактивный эндпоинт (Reactor): назначение сотрудника на смену.
+     * Внутри выполняется межсервисный вызов employee-service через Feign Client,
+     * обёрнутый в Circuit Breaker (resilience4j) с fallback-заглушкой.
+     * Используется для проверки отказоустойчивости: при недоступности
+     * employee-service возвращается fallback-ответ без зависания шлюза.
+     */
+    @PostMapping("/reactive/{id}/employees/{employeeId}")
+    @Operation(summary = "Назначить сотрудника на смену (реактивно, через Feign + Circuit Breaker)")
+    public Mono<ShiftDto.Response> assignEmployeeReactive(@PathVariable Long id,
+                                                          @PathVariable Long employeeId) {
+        return bridgeService.assignEmployeeToShiftReactive(id, employeeId);
     }
 }

@@ -1,6 +1,5 @@
 ARG MODULE=gateway-service
 
-# 1. Сборка
 FROM eclipse-temurin:21-jdk-alpine AS builder
 
 WORKDIR /build
@@ -20,12 +19,11 @@ RUN chmod +x ./mvnw
 RUN --mount=type=cache,target=/root/.m2 \
     ./mvnw clean package -pl ${MODULE} -am -DskipTests
 
-# 2. Запуск
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-# Конфигурации для Config Server (native profile читает file:./config-repo)
+
 COPY config-repo /app/config-repo
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup

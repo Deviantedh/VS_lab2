@@ -42,7 +42,7 @@ public class ReactiveAttendanceService {
                 });
     }
 
-    public Mono<AttendanceRecordDto.Response> getById(Long id) {
+    public Mono<AttendanceRecordDto.Response> getById(Long id) {  //flux
         return repository.findById(id)
                 .map(this::toResponseDto);
     }

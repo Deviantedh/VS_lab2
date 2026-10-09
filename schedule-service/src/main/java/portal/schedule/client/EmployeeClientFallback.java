@@ -11,7 +11,7 @@ public class EmployeeClientFallback implements EmployeeClient {
 
     @Override
     public EmployeeDto.Response getEmployeeById(Long id) {
-        // Fallback-заглушка при срабатывании Circuit Breaker
+        // заглушка при срабатывании Circuit Breaker
         return EmployeeDto.Response.builder()
                 .id(id)
                 .name("Резервный профиль (Employee Service временно недоступен)")

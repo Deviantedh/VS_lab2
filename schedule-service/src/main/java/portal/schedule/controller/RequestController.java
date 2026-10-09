@@ -63,10 +63,7 @@ public class RequestController {
         return ResponseEntity.status(HttpStatus.CREATED).body(requestService.create(request));
     }
 
-    /**
-     * ТРАНЗАКЦИОННЫЙ ЭНДПОИНТ №2:
-     * Одобрение/отклонение заявки HR/менеджером.
-     */
+
     @PostMapping("/{id}/process")
     @Operation(
             summary = "Обработать заявку: одобрить (APPROVED) или отклонить (REJECTED) (Транзакционный сценарий №2)",

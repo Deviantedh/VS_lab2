@@ -8,7 +8,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Repository
-public interface ReactiveAttendanceRepository extends R2dbcRepository<ReactiveAttendanceRecord, Long> {
+public interface ReactiveAttendanceRepository extends R2dbcRepository<ReactiveAttendanceRecord, Long> {  //Разобраться
 
     Flux<ReactiveAttendanceRecord> findByEmployeeId(Long employeeId, Pageable pageable);
 

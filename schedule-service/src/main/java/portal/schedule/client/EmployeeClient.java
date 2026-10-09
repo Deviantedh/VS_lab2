@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import portal.dto.EmployeeDto;
 
-@FeignClient(name = "employee-service", fallback = EmployeeClientFallback.class)
+@FeignClient(name = "employee-service", fallback = EmployeeClientFallback.class)  // доделать для всех
 public interface EmployeeClient {
 
     @GetMapping("/api/employees/{id}")

@@ -10,7 +10,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-public class SliceResponse<T> {
+public class SliceResponse<T> {  //заменить на generic!!!
     private List<T> content;
     private int pageNumber;
     private int pageSize;

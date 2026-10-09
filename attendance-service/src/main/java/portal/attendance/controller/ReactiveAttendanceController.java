@@ -32,7 +32,7 @@ public class ReactiveAttendanceController {
 
     @GetMapping
     @Operation(summary = "Получить записи явок для бесконечной ленты (Infinite Scroll / Slice, реактивно)")
-    public Mono<SliceResponse<AttendanceRecordDto.Response>> getAll(
+    public Mono<SliceResponse<AttendanceRecordDto.Response>> getAll(//flux
             @RequestParam(required = false) Long employeeId,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size) {

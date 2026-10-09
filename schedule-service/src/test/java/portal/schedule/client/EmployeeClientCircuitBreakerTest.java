@@ -29,6 +29,9 @@ class EmployeeClientCircuitBreakerTest {
     private ShiftRepository shiftRepository;
 
     @Mock
+    private portal.schedule.service.ShiftService shiftService;
+
+    @Mock
     private EmployeeClient employeeClient;
 
     private final EmployeeClientFallback fallback = new EmployeeClientFallback();
@@ -54,22 +57,19 @@ class EmployeeClientCircuitBreakerTest {
         Long shiftId = 1L;
         Long employeeId = 42L;
 
-        Shift shift = Shift.builder()
+        ShiftDto.Response expectedResponse = ShiftDto.Response.builder()
                 .id(shiftId)
                 .date(LocalDate.of(2026, 10, 20))
-                .timeFrom(LocalTime.of(10, 0))
-                .timeTo(LocalTime.of(19, 0))
-                .employees(new ArrayList<>())
                 .build();
 
         // Simulate Circuit Breaker invoking fallback due to employee-service downtime
         when(employeeClient.getEmployeeById(employeeId))
                 .thenReturn(fallback.getEmployeeById(employeeId));
-        when(shiftRepository.findById(shiftId))
-                .thenReturn(Optional.of(shift));
+        when(shiftService.assignEmployee(shiftId, employeeId, null))
+                .thenReturn(expectedResponse);
 
         ReactiveScheduleBridgeService bridgeService =
-                new ReactiveScheduleBridgeService(shiftRepository, employeeClient);
+                new ReactiveScheduleBridgeService(shiftRepository, shiftService, employeeClient);
 
         Mono<ShiftDto.Response> result = bridgeService.assignEmployeeToShiftReactive(shiftId, employeeId);
 
@@ -81,6 +81,6 @@ class EmployeeClientCircuitBreakerTest {
                 .verifyComplete();
 
         verify(employeeClient).getEmployeeById(employeeId);
-        verify(shiftRepository).findById(shiftId);
+        verify(shiftService).assignEmployee(shiftId, employeeId, null);
     }
 }

@@ -32,11 +32,26 @@ public class ReactiveAttendanceController {
 
     @GetMapping
     @Operation(summary = "Получить записи явок для бесконечной ленты (Infinite Scroll / Slice, реактивно)")
-    public Mono<SliceResponse<AttendanceRecordDto.Response>> getAll(//flux
+    public Mono<SliceResponse<AttendanceRecordDto.Response>> getAll(
             @RequestParam(required = false) Long employeeId,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size) {
         return service.getSlice(employeeId, page, size);
+    }
+
+    @GetMapping(value = "/stream", produces = {org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE, org.springframework.http.MediaType.APPLICATION_NDJSON_VALUE})
+    @Operation(summary = "Потоковая передача явок (Flux SSE / ndjson стриминг)")
+    public reactor.core.publisher.Flux<AttendanceRecordDto.Response> stream(
+            @RequestParam(required = false) Long employeeId,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int limit) {
+        return service.getStream(employeeId, limit);
+    }
+
+    @GetMapping("/batch")
+    @Operation(summary = "Получить пачку отметок явки по списку ID (Flux)")
+    public reactor.core.publisher.Flux<AttendanceRecordDto.Response> getByIds(
+            @RequestParam java.util.List<Long> ids) {
+        return service.getByIds(ids);
     }
 
     @GetMapping("/employee/{employeeId}")

@@ -149,4 +149,40 @@ class ReactiveAttendanceControllerTest {
                 .jsonPath("$.error").isEqualTo("Not Found")
                 .jsonPath("$.message").isEqualTo("Запись о явке с ID 999 не найдена!");
     }
+
+    @Test
+    @DisplayName("GET /api/attendance/stream returns streaming Flux NDJSON")
+    void testStreamEndpoint() {
+        AttendanceRecordDto.Response resp = AttendanceRecordDto.Response.builder()
+                .id(1L)
+                .employeeId(10L)
+                .build();
+
+        when(service.getStream(null, 20)).thenReturn(reactor.core.publisher.Flux.just(resp));
+
+        webTestClient.get()
+                .uri("/api/attendance/stream")
+                .accept(MediaType.APPLICATION_NDJSON)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_NDJSON)
+                .expectBodyList(AttendanceRecordDto.Response.class)
+                .hasSize(1);
+    }
+
+    @Test
+    @DisplayName("GET /api/attendance/batch returns batch Flux")
+    void testBatchEndpoint() {
+        AttendanceRecordDto.Response resp1 = AttendanceRecordDto.Response.builder().id(1L).build();
+        AttendanceRecordDto.Response resp2 = AttendanceRecordDto.Response.builder().id(2L).build();
+
+        when(service.getByIds(List.of(1L, 2L))).thenReturn(reactor.core.publisher.Flux.just(resp1, resp2));
+
+        webTestClient.get()
+                .uri("/api/attendance/batch?ids=1,2")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBodyList(AttendanceRecordDto.Response.class)
+                .hasSize(2);
+    }
 }

@@ -38,12 +38,29 @@ public class ReactiveAttendanceService {
                 .map(list -> {
                     boolean hasNext = list.size() > limit;
                     var content = hasNext ? list.subList(0, limit) : list;
-                    return new SliceResponse<>(content, page, limit, hasNext);
+                    return SliceResponse.of(content, page, limit, hasNext);
                 });
     }
 
-    public Mono<AttendanceRecordDto.Response> getById(Long id) {  //flux
+    public Flux<AttendanceRecordDto.Response> getStream(Long employeeId, int limit) {
+        int boundedLimit = Math.min(Math.max(limit, 1), 50);
+        Pageable pageable = PageRequest.of(0, boundedLimit, Sort.by(Sort.Direction.DESC, "id"));
+        Flux<ReactiveAttendanceRecord> source = (employeeId != null)
+                ? repository.findByEmployeeId(employeeId, pageable)
+                : repository.findAllBy(pageable);
+        return source.map(this::toResponseDto);
+    }
+
+    public Mono<AttendanceRecordDto.Response> getById(Long id) {
         return repository.findById(id)
+                .map(this::toResponseDto);
+    }
+
+    public Flux<AttendanceRecordDto.Response> getByIds(Iterable<Long> ids) {
+        if (ids == null) {
+            return Flux.empty();
+        }
+        return repository.findAllById(ids)
                 .map(this::toResponseDto);
     }
 

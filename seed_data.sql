@@ -51,12 +51,12 @@ INSERT INTO employees (name, phone, birth_date, hire_date, status, created_at, u
     ('Петров Иван Николаевич', '+79997778899', '1999-05-14', '2024-02-01', 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- 5. Учетные записи пользователей (users)
-INSERT INTO users (employee_id, role_id, login, is_active, created_at, updated_at) VALUES
-    (1, 0, 'admin', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (6, 1, 'hr_morozova', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (5, 2, 'manager_sokolov', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (2, 3, 'barista_dmitry', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (3, 3, 'barista_anastasia', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO users (employee_id, role_id, login, password_hash, is_active, created_at, updated_at) VALUES
+    (1, 0, 'admin', '$2a$10$NKRdBGeNVMA3bSBCPWDUruunyfdT6uvdeZqBd0C6LwrPNixLElGEW', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (6, 1, 'hr_morozova', '$2a$10$rRn4ru9rfj0tAPzuxEf4quf1f5F0BHjxyGn7YNEFe4FqJDPdKlbQC', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (5, 2, 'manager_sokolov', '$2a$10$rRn4ru9rfj0tAPzuxEf4quf1f5F0BHjxyGn7YNEFe4FqJDPdKlbQC', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (2, 3, 'barista_dmitry', '$2a$10$rRn4ru9rfj0tAPzuxEf4quf1f5F0BHjxyGn7YNEFe4FqJDPdKlbQC', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (3, 3, 'barista_anastasia', '$2a$10$rRn4ru9rfj0tAPzuxEf4quf1f5F0BHjxyGn7YNEFe4FqJDPdKlbQC', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- 6. Назначения сотрудников на точки и должности (employee_assignments)
 INSERT INTO employee_assignments (employee_id, branch_id, position_id, started_at, is_primary, created_at) VALUES

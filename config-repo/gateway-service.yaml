@@ -13,7 +13,7 @@ spring:
             - id: employee-service-route
               uri: lb://employee-service
               predicates:
-                - Path=/api/companies/**,/api/branches/**,/api/positions/**,/api/employees/**,/api/users/**
+                - Path=/api/companies/**,/api/branches/**,/api/positions/**,/api/employees/**,/api/users/**,/api/auth/**
             - id: attendance-service-route
               uri: lb://attendance-service
               predicates:

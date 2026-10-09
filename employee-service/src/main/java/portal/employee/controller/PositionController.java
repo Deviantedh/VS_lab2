@@ -33,18 +33,21 @@ public class PositionController {
     }
 
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     @Operation(summary = "Создать новую должность")
     public ResponseEntity<PositionDto.Response> create(@Valid @RequestBody PositionDto.Request request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(positionService.create(request));
     }
 
     @PutMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     @Operation(summary = "Обновить должность")
     public ResponseEntity<PositionDto.Response> update(@PathVariable Long id, @Valid @RequestBody PositionDto.Request request) {
         return ResponseEntity.ok(positionService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     @Operation(summary = "Удалить должность")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         positionService.delete(id);

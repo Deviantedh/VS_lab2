@@ -33,18 +33,21 @@ public class CompanyController {
     }
 
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     @Operation(summary = "Создать новую компанию")
     public ResponseEntity<CompanyDto.Response> create(@Valid @RequestBody CompanyDto.Request request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(companyService.create(request));
     }
 
     @PutMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     @Operation(summary = "Обновить компанию")
     public ResponseEntity<CompanyDto.Response> update(@PathVariable Long id, @Valid @RequestBody CompanyDto.Request request) {
         return ResponseEntity.ok(companyService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     @Operation(summary = "Удалить компанию")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         companyService.delete(id);

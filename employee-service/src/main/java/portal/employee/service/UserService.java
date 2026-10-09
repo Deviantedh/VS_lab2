@@ -3,6 +3,7 @@ package portal.employee.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import portal.dto.UserDto;
 import portal.entity.Employee;
 import portal.entity.Role;
@@ -22,6 +23,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final EmployeeService employeeService;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public List<UserDto.Response> getAll() {
@@ -78,8 +80,13 @@ public class UserService {
             }
         }
 
+        String rawPassword = (request.getPassword() != null && !request.getPassword().isBlank())
+                ? request.getPassword().trim()
+                : "password123";
+
         User user = User.builder()
                 .login(login)
+                .passwordHash(passwordEncoder.encode(rawPassword))
                 .role(role)
                 .employee(employee)
                 .isActive(true)
@@ -113,6 +120,10 @@ public class UserService {
         user.setLogin(login);
         user.setRole(role);
         user.setEmployee(employee);
+
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            user.setPasswordHash(passwordEncoder.encode(request.getPassword().trim()));
+        }
 
         return toResponse(userRepository.save(user));
     }

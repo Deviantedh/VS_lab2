@@ -52,18 +52,21 @@ public class BranchController {
     }
 
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     @Operation(summary = "Создать новый филиал")
     public ResponseEntity<BranchDto.Response> create(@Valid @RequestBody BranchDto.Request request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(branchService.create(request));
     }
 
     @PutMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     @Operation(summary = "Обновить данные филиала")
     public ResponseEntity<BranchDto.Response> update(@PathVariable Long id, @Valid @RequestBody BranchDto.Request request) {
         return ResponseEntity.ok(branchService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     @Operation(summary = "Удалить филиал")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         branchService.delete(id);

@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 import portal.attendance.entity.ReactiveAttendanceRecord;
+import portal.attendance.exception.ResourceNotFoundException;
 import portal.attendance.repository.ReactiveAttendanceRepository;
 import portal.dto.AttendanceRecordDto;
 import portal.dto.SliceResponse;
@@ -18,9 +19,11 @@ import reactor.test.StepVerifier;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -33,12 +36,12 @@ class ReactiveAttendanceServiceTest {
     @InjectMocks
     private ReactiveAttendanceService service;
 
-    private ReactiveAttendanceRecord sampleRecord;
     private Instant now;
+    private ReactiveAttendanceRecord sampleRecord;
 
     @BeforeEach
     void setUp() {
-        now = Instant.parse("2026-10-01T09:00:00Z");
+        now = Instant.now();
         sampleRecord = ReactiveAttendanceRecord.builder()
                 .id(1L)
                 .employeeId(10L)
@@ -57,7 +60,7 @@ class ReactiveAttendanceServiceTest {
     }
 
     @Test
-    @DisplayName("getSlice with employeeId: verify Mono<SliceResponse> emissions and pagination using StepVerifier")
+    @DisplayName("getSlice with employeeId: verify Mono<SliceResponse> emissions, sorting and pagination using StepVerifier")
     void testGetSliceWithEmployeeId() {
         when(repository.findByEmployeeId(eq(10L), any(Pageable.class)))
                 .thenReturn(Flux.just(sampleRecord));
@@ -75,7 +78,8 @@ class ReactiveAttendanceServiceTest {
                 })
                 .verifyComplete();
 
-        verify(repository).findByEmployeeId(eq(10L), any(Pageable.class));
+        verify(repository).findByEmployeeId(eq(10L), argThat(p ->
+                p.getSort().getOrderFor("id") != null && p.getSort().getOrderFor("id").isDescending()));
     }
 
     @Test
@@ -219,7 +223,7 @@ class ReactiveAttendanceServiceTest {
     }
 
     @Test
-    @DisplayName("checkOut: verify error signal when record does not exist")
+    @DisplayName("checkOut: throws ResourceNotFoundException when record is not found in database")
     void testCheckOutNotFound() {
         when(repository.findById(999L)).thenReturn(Mono.empty());
 
@@ -230,7 +234,7 @@ class ReactiveAttendanceServiceTest {
         Mono<AttendanceRecordDto.Response> result = service.checkOut(999L, req);
 
         StepVerifier.create(result)
-                .expectErrorMatches(throwable -> throwable instanceof IllegalArgumentException
+                .expectErrorMatches(throwable -> throwable instanceof ResourceNotFoundException
                         && throwable.getMessage().contains("не найдена"))
                 .verify();
     }

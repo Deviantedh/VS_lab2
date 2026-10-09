@@ -39,6 +39,9 @@ class ReactiveScheduleBridgeServiceTest {
     private ShiftRepository shiftRepository;
 
     @Mock
+    private ShiftService shiftService;
+
+    @Mock
     private EmployeeClient employeeClient;
 
     @InjectMocks
@@ -59,6 +62,52 @@ class ReactiveScheduleBridgeServiceTest {
                 .breakMinutes(60)
                 .employees(new ArrayList<>())
                 .build();
+    }
+
+    @Test
+    @DisplayName("assignEmployeeToShiftReactive: successfully verifies employee via Feign and delegates to shiftService")
+    void testAssignEmployeeToShiftReactiveSuccess() {
+        EmployeeDto.Response employeeResponse = EmployeeDto.Response.builder()
+                .id(5L)
+                .name("Иван Разработчик")
+                .status(EmployeeStatus.ACTIVE)
+                .build();
+
+        ShiftDto.Response expectedShiftResponse = ShiftDto.Response.builder()
+                .id(10L)
+                .scheduleId(1L)
+                .date(LocalDate.of(2026, 10, 15))
+                .build();
+
+        when(employeeClient.getEmployeeById(5L)).thenReturn(employeeResponse);
+        when(shiftService.assignEmployee(10L, 5L, null)).thenReturn(expectedShiftResponse);
+
+        Mono<ShiftDto.Response> result = bridgeService.assignEmployeeToShiftReactive(10L, 5L);
+
+        StepVerifier.create(result)
+                .assertNext(resp -> {
+                    assertThat(resp.getId()).isEqualTo(10L);
+                    assertThat(resp.getScheduleId()).isEqualTo(1L);
+                })
+                .verifyComplete();
+
+        verify(employeeClient).getEmployeeById(5L);
+        verify(shiftService).assignEmployee(10L, 5L, null);
+    }
+
+    @Test
+    @DisplayName("assignEmployeeToShiftReactive: throws ResourceNotFoundException when employeeClient returns null")
+    void testAssignEmployeeToShiftReactiveEmployeeNull() {
+        when(employeeClient.getEmployeeById(99L)).thenReturn(null);
+
+        Mono<ShiftDto.Response> result = bridgeService.assignEmployeeToShiftReactive(10L, 99L);
+
+        StepVerifier.create(result)
+                .expectErrorMatches(t -> t instanceof ResourceNotFoundException
+                        && t.getMessage().contains("Сотрудник с ID 99 не найден"))
+                .verify();
+
+        verify(shiftService, never()).assignEmployee(any(), any(), any());
     }
 
     @Test
@@ -127,61 +176,6 @@ class ReactiveScheduleBridgeServiceTest {
         StepVerifier.create(result)
                 .expectErrorMatches(throwable -> throwable instanceof ResourceNotFoundException
                         && throwable.getMessage().contains("Смена с ID 999 не найдена"))
-                .verify();
-    }
-
-    @Test
-    @DisplayName("assignEmployeeToShiftReactive: verify successful cross-service Feign call + JPA bridge")
-    void testAssignEmployeeToShiftReactiveSuccess() {
-        EmployeeDto.Response employeeResponse = EmployeeDto.Response.builder()
-                .id(5L)
-                .name("Иван Разработчик")
-                .status(EmployeeStatus.ACTIVE)
-                .build();
-
-        when(employeeClient.getEmployeeById(5L)).thenReturn(employeeResponse);
-        when(shiftRepository.findById(10L)).thenReturn(Optional.of(shift));
-
-        Mono<ShiftDto.Response> result = bridgeService.assignEmployeeToShiftReactive(10L, 5L);
-
-        StepVerifier.create(result)
-                .assertNext(resp -> {
-                    assertThat(resp.getId()).isEqualTo(10L);
-                    assertThat(resp.getScheduleId()).isEqualTo(1L);
-                })
-                .verifyComplete();
-
-        verify(employeeClient).getEmployeeById(5L);
-        verify(shiftRepository).findById(10L);
-    }
-
-    @Test
-    @DisplayName("assignEmployeeToShiftReactive: verify error when employeeClient returns null")
-    void testAssignEmployeeToShiftReactiveEmployeeNull() {
-        when(employeeClient.getEmployeeById(99L)).thenReturn(null);
-
-        Mono<ShiftDto.Response> result = bridgeService.assignEmployeeToShiftReactive(10L, 99L);
-
-        StepVerifier.create(result)
-                .expectErrorMatches(t -> t instanceof ResourceNotFoundException
-                        && t.getMessage().contains("Сотрудник с ID 99 не найден"))
-                .verify();
-
-        verify(shiftRepository, never()).findById(any());
-    }
-
-    @Test
-    @DisplayName("assignEmployeeToShiftReactive: verify error when shift does not exist")
-    void testAssignEmployeeToShiftReactiveShiftNotFound() {
-        EmployeeDto.Response employee = EmployeeDto.Response.builder().id(5L).build();
-        when(employeeClient.getEmployeeById(5L)).thenReturn(employee);
-        when(shiftRepository.findById(10L)).thenReturn(Optional.empty());
-
-        Mono<ShiftDto.Response> result = bridgeService.assignEmployeeToShiftReactive(10L, 5L);
-
-        StepVerifier.create(result)
-                .expectErrorMatches(t -> t instanceof ResourceNotFoundException
-                        && t.getMessage().contains("Смена с ID 10 не найдена"))
                 .verify();
     }
 }

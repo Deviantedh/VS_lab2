@@ -9,6 +9,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import portal.attendance.exception.GlobalExceptionHandler;
+import portal.attendance.exception.ResourceNotFoundException;
 import portal.attendance.service.ReactiveAttendanceService;
 import portal.dto.AttendanceRecordDto;
 import portal.dto.SliceResponse;
@@ -34,7 +36,9 @@ class ReactiveAttendanceControllerTest {
 
     @BeforeEach
     void setUp() {
-        webTestClient = WebTestClient.bindToController(controller).build();
+        webTestClient = WebTestClient.bindToController(controller)
+                .controllerAdvice(new GlobalExceptionHandler())
+                .build();
     }
 
     @Test
@@ -122,5 +126,27 @@ class ReactiveAttendanceControllerTest {
                 .expectBody()
                 .jsonPath("$.id").isEqualTo(55)
                 .jsonPath("$.breakMinutes").isEqualTo(45);
+    }
+
+    @Test
+    @DisplayName("POST /api/attendance/{id}/check-out returns 404 NOT_FOUND handled by GlobalExceptionHandler")
+    void testCheckOutNotFoundHandledByGlobalExceptionHandler() {
+        AttendanceRecordDto.CheckOutRequest request = AttendanceRecordDto.CheckOutRequest.builder()
+                .breakMinutes(45)
+                .build();
+
+        when(service.checkOut(eq(999L), any()))
+                .thenReturn(Mono.error(new ResourceNotFoundException("Запись о явке с ID 999 не найдена!")));
+
+        webTestClient.post()
+                .uri("/api/attendance/999/check-out")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.error").isEqualTo("Not Found")
+                .jsonPath("$.message").isEqualTo("Запись о явке с ID 999 не найдена!");
     }
 }

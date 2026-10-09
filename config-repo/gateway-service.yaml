@@ -4,10 +4,11 @@ server:
 spring:
   application:
     name: gateway-service
+
   cloud:
     gateway:
       server:
-        mvc:
+        webmvc:
           routes:
             - id: employee-service-route
               uri: lb://employee-service
@@ -39,6 +40,17 @@ spring:
                 - Path=/v3/api-docs/schedule-service
               filters:
                 - SetPath=/v3/api-docs
+          trusted-proxies: ".*"
+          x-forwarded-request-headers-filter:
+            enabled: true
+            for-append: false
+            for-enabled: false
+            host-append: false
+            host-enabled: true
+            port-append: false
+            port-enabled: true
+            proto-append: false
+            proto-enabled: true
 
 eureka:
   client:

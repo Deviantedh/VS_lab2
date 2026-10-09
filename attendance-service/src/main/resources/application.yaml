@@ -1,9 +1,13 @@
 server:
   port: 8082
+  forward-headers-strategy: framework
 
 spring:
   application:
     name: attendance-service
+
+  config:
+    import: optional:configserver:${CONFIG_SERVICE_URL:http://config-service:8888}
 
   r2dbc:
     url: ${R2DBC_URL:r2dbc:postgresql://localhost:5432/portal_db}

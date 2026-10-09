@@ -1,9 +1,13 @@
 server:
   port: 8081
+  forward-headers-strategy: framework
 
 spring:
   application:
     name: employee-service
+
+  config:
+    import: optional:configserver:${CONFIG_SERVICE_URL:http://config-service:8888}
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/portal_db}
@@ -13,7 +17,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     open-in-view: false
     show-sql: false
 

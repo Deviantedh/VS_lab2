@@ -2,8 +2,11 @@ package portal.attendance.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import portal.attendance.entity.ReactiveAttendanceRecord;
+import portal.attendance.exception.ResourceNotFoundException;
 import portal.attendance.repository.ReactiveAttendanceRepository;
 import portal.dto.AttendanceRecordDto;
 import portal.dto.SliceResponse;
@@ -23,9 +26,12 @@ public class ReactiveAttendanceService {
         int limit = Math.min(Math.max(size, 1), 50);
         int fetchSize = limit + 1; // +1 to check for hasNext
 
+        // Явная сортировка: без неё порядок страниц не гарантирован (дубли/пропуски)
+        Pageable pageable = PageRequest.of(page, fetchSize, Sort.by(Sort.Direction.DESC, "id"));
+
         Flux<ReactiveAttendanceRecord> source = (employeeId != null)
-                ? repository.findByEmployeeId(employeeId, PageRequest.of(page, fetchSize))
-                : repository.findAllBy(PageRequest.of(page, fetchSize));
+                ? repository.findByEmployeeId(employeeId, pageable)
+                : repository.findAllBy(pageable);
 
         return source.map(this::toResponseDto)
                 .collectList()
@@ -84,7 +90,7 @@ public class ReactiveAttendanceService {
     public Mono<AttendanceRecordDto.Response> checkOut(Long id, AttendanceRecordDto.CheckOutRequest request) {
         Instant now = Instant.now();
         return repository.findById(id)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Запись о явке с ID " + id + " не найдена!")))
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Запись о явке с ID " + id + " не найдена!")))
                 .flatMap(record -> {
                     record.setActualEnd(now);
                     if (request.getBreakMinutes() != null) {

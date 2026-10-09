@@ -14,7 +14,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import portal.dto.ShiftDto;
 import portal.dto.ShiftEmployeeLogDto;
+import portal.schedule.exception.ResourceNotFoundException;
+import portal.schedule.service.ReactiveScheduleBridgeService;
 import portal.schedule.service.ShiftService;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.util.List;
 
@@ -29,8 +33,49 @@ class ShiftControllerTest {
     @Mock
     private ShiftService shiftService;
 
+    @Mock
+    private ReactiveScheduleBridgeService bridgeService;
+
     @InjectMocks
     private ShiftController shiftController;
+
+    @Test
+    @DisplayName("assignEmployeeReactive: successfully assigns employee reactively via bridge service")
+    void testAssignEmployeeReactiveSuccess() {
+        ShiftDto.Response expectedResponse = ShiftDto.Response.builder()
+                .id(1L)
+                .build();
+
+        when(bridgeService.assignEmployeeToShiftReactive(1L, 10L))
+                .thenReturn(Mono.just(expectedResponse));
+
+        Mono<ShiftDto.Response> result = shiftController.assignEmployeeReactive(1L, 10L);
+
+        StepVerifier.create(result)
+                .assertNext(response -> {
+                    assertThat(response).isNotNull();
+                    assertThat(response.getId()).isEqualTo(1L);
+                })
+                .verifyComplete();
+
+        verify(bridgeService).assignEmployeeToShiftReactive(1L, 10L);
+    }
+
+    @Test
+    @DisplayName("assignEmployeeReactive: propagates error from bridge service when employee or shift not found")
+    void testAssignEmployeeReactiveError() {
+        when(bridgeService.assignEmployeeToShiftReactive(1L, 999L))
+                .thenReturn(Mono.error(new ResourceNotFoundException("Сотрудник с ID 999 не найден")));
+
+        Mono<ShiftDto.Response> result = shiftController.assignEmployeeReactive(1L, 999L);
+
+        StepVerifier.create(result)
+                .expectErrorMatches(t -> t instanceof ResourceNotFoundException
+                        && t.getMessage().contains("Сотрудник с ID 999 не найден"))
+                .verify();
+
+        verify(bridgeService).assignEmployeeToShiftReactive(1L, 999L);
+    }
 
     @Test
     @DisplayName("getAll returns paged shifts and headers")

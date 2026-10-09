@@ -3,6 +3,8 @@ package portal.attendance.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,6 +21,7 @@ import portal.dto.AttendanceRecordDto;
 import portal.dto.SliceResponse;
 import reactor.core.publisher.Mono;
 
+@Validated
 @RestController
 @RequestMapping("/api/attendance")
 @RequiredArgsConstructor
@@ -30,8 +34,8 @@ public class ReactiveAttendanceController {
     @Operation(summary = "Получить записи явок для бесконечной ленты (Infinite Scroll / Slice, реактивно)")
     public Mono<SliceResponse<AttendanceRecordDto.Response>> getAll(
             @RequestParam(required = false) Long employeeId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size) {
         return service.getSlice(employeeId, page, size);
     }
 
@@ -39,8 +43,8 @@ public class ReactiveAttendanceController {
     @Operation(summary = "Получить явку конкретного сотрудника для бесконечной ленты")
     public Mono<SliceResponse<AttendanceRecordDto.Response>> getByEmployee(
             @PathVariable Long employeeId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size) {
         return service.getSlice(employeeId, page, size);
     }
 

@@ -144,4 +144,68 @@ class EmployeeControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).containsExactly(resp);
     }
+
+    @Test
+    @DisplayName("Сотрудник (EMPLOYEE) успешно получает свою карточку по ID")
+    void testGetByIdAsEmployeeSuccess() {
+        portal.employee.security.UserPrincipal empPrincipal = portal.employee.security.UserPrincipal.builder()
+                .id(2L)
+                .employeeId(1L)
+                .role(portal.dto.RoleCode.EMPLOYEE)
+                .build();
+
+        EmployeeDto.Response resp = EmployeeDto.Response.builder().id(1L).name("Тест").build();
+        when(employeeService.getById(1L)).thenReturn(resp);
+
+        ResponseEntity<EmployeeDto.Response> response = employeeController.getById(1L, empPrincipal);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(resp);
+    }
+
+    @Test
+    @DisplayName("Сотрудник (EMPLOYEE) получает 403 Forbidden при попытке запросить чужую карточку")
+    void testGetByIdAsEmployeeForbidden() {
+        portal.employee.security.UserPrincipal empPrincipal = portal.employee.security.UserPrincipal.builder()
+                .id(2L)
+                .employeeId(1L)
+                .role(portal.dto.RoleCode.EMPLOYEE)
+                .build();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> employeeController.getById(2L, empPrincipal))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                .hasMessageContaining("Сотрудник имеет доступ только к собственной информации");
+    }
+
+    @Test
+    @DisplayName("Сотрудник (EMPLOYEE) успешно получает свою историю назначений")
+    void testGetAssignmentsAsEmployeeSuccess() {
+        portal.employee.security.UserPrincipal empPrincipal = portal.employee.security.UserPrincipal.builder()
+                .id(2L)
+                .employeeId(1L)
+                .role(portal.dto.RoleCode.EMPLOYEE)
+                .build();
+
+        EmployeeAssignmentDto.Response resp = EmployeeAssignmentDto.Response.builder().id(100L).employeeId(1L).build();
+        when(employeeService.getAssignments(1L)).thenReturn(List.of(resp));
+
+        ResponseEntity<List<EmployeeAssignmentDto.Response>> response = employeeController.getAssignments(1L, empPrincipal);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).containsExactly(resp);
+    }
+
+    @Test
+    @DisplayName("Сотрудник (EMPLOYEE) получает 403 Forbidden при попытке запросить чужую историю назначений")
+    void testGetAssignmentsAsEmployeeForbidden() {
+        portal.employee.security.UserPrincipal empPrincipal = portal.employee.security.UserPrincipal.builder()
+                .id(2L)
+                .employeeId(1L)
+                .role(portal.dto.RoleCode.EMPLOYEE)
+                .build();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> employeeController.getAssignments(2L, empPrincipal))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                .hasMessageContaining("Сотрудник имеет доступ только к собственной истории назначений");
+    }
 }

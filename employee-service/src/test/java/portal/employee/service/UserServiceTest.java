@@ -37,6 +37,9 @@ class UserServiceTest {
     @Mock
     private EmployeeService employeeService;
 
+    @Mock
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
     @InjectMocks
     private UserService userService;
 
@@ -46,6 +49,7 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(passwordEncoder.encode(any())).thenReturn("hashed_secret");
         role = Role.builder().id((short) 1).code(RoleCode.HR).name("Менеджер по персоналу").build();
         employee = Employee.builder().id(10L).name("Иван Иванов").build();
         user = User.builder()

@@ -121,4 +121,84 @@ class UserControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         verify(userService).delete(1L);
     }
+
+    @Test
+    @DisplayName("Сотрудник (EMPLOYEE) видит только свой профиль при вызове getAll")
+    void testGetAllAsEmployee() {
+        portal.employee.security.UserPrincipal empPrincipal = portal.employee.security.UserPrincipal.builder()
+                .id(3L)
+                .login("barista_dmitry")
+                .role(portal.dto.RoleCode.EMPLOYEE)
+                .build();
+
+        UserDto.Response myResp = UserDto.Response.builder().id(3L).login("barista_dmitry").build();
+        when(userService.getById(3L)).thenReturn(myResp);
+
+        ResponseEntity<List<UserDto.Response>> response = userController.getAll(empPrincipal);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).containsExactly(myResp);
+        verify(userService, never()).getAll();
+    }
+
+    @Test
+    @DisplayName("Сотрудник (EMPLOYEE) успешно получает собственный профиль по ID")
+    void testGetByIdAsEmployeeSuccess() {
+        portal.employee.security.UserPrincipal empPrincipal = portal.employee.security.UserPrincipal.builder()
+                .id(3L)
+                .login("barista_dmitry")
+                .role(portal.dto.RoleCode.EMPLOYEE)
+                .build();
+
+        UserDto.Response myResp = UserDto.Response.builder().id(3L).login("barista_dmitry").build();
+        when(userService.getById(3L)).thenReturn(myResp);
+
+        ResponseEntity<UserDto.Response> response = userController.getById(3L, empPrincipal);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(myResp);
+    }
+
+    @Test
+    @DisplayName("Сотрудник (EMPLOYEE) получает 403 Forbidden при попытке запросить чужой профиль по ID")
+    void testGetByIdAsEmployeeForbidden() {
+        portal.employee.security.UserPrincipal empPrincipal = portal.employee.security.UserPrincipal.builder()
+                .id(3L)
+                .login("barista_dmitry")
+                .role(portal.dto.RoleCode.EMPLOYEE)
+                .build();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> userController.getById(1L, empPrincipal))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                .hasMessageContaining("Сотрудник имеет доступ только к собственному профилю пользователя");
+    }
+
+    @Test
+    @DisplayName("Сотрудник (EMPLOYEE) получает 403 Forbidden при попытке запросить чужой профиль по логину")
+    void testGetByLoginAsEmployeeForbidden() {
+        portal.employee.security.UserPrincipal empPrincipal = portal.employee.security.UserPrincipal.builder()
+                .id(3L)
+                .login("barista_dmitry")
+                .role(portal.dto.RoleCode.EMPLOYEE)
+                .build();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> userController.getByLogin("admin", empPrincipal))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                .hasMessageContaining("Сотрудник имеет доступ только к собственному профилю пользователя");
+    }
+
+    @Test
+    @DisplayName("Сотрудник (EMPLOYEE) получает 403 Forbidden при попытке запросить профиль чужого сотрудника")
+    void testGetByEmployeeIdAsEmployeeForbidden() {
+        portal.employee.security.UserPrincipal empPrincipal = portal.employee.security.UserPrincipal.builder()
+                .id(3L)
+                .employeeId(10L)
+                .login("barista_dmitry")
+                .role(portal.dto.RoleCode.EMPLOYEE)
+                .build();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> userController.getByEmployeeId(99L, empPrincipal))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                .hasMessageContaining("Сотрудник имеет доступ только к учетной записи своего сотрудника");
+    }
 }

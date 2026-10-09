@@ -27,8 +27,12 @@ public class UserDto {
 
         @NotBlank(message = "Логин обязателен")
         @Size(min = 3, max = 100, message = "Логин должен быть от 3 до 100 символов")
-        @Schema(description = "Логин пользователя", example = "Ваш текст")
+        @Schema(description = "Логин пользователя", example = "ivanov")
         private String login;
+
+        @Size(min = 6, max = 100, message = "Пароль должен быть от 6 до 100 символов")
+        @Schema(description = "Пароль пользователя (хэшируется при сохранении, никогда не возвращается в ответах)", example = "secret123")
+        private String password;
     }
 
     @Getter

@@ -3,13 +3,11 @@ package portal.schedule.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 import portal.entity.EmployeeAbsence;
 
 import java.time.LocalDate;
 import java.util.List;
 
-@Repository
 public interface EmployeeAbsenceRepository extends JpaRepository<EmployeeAbsence, Long> {
 
     List<EmployeeAbsence> findAllByEmployeeId(Long employeeId);
